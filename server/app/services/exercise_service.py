@@ -8,7 +8,7 @@ from app.core.agents.exercise_agent import (
 )
 from app.database.database import get_async_db, get_independent_db_session
 from app.core.config import settings
-from app.models import Exercise, ExerciseTestCase
+from app.models import Exercise
 from app.models.exercise_model import Exercise as ExerciseModel
 from app.models.lesson_model import Lesson
 from app.models.exercise_test_case_model import ExerciseTestCase
@@ -198,8 +198,14 @@ class ExerciseService:
 
         # Persist generated test cases (if provided by agent)
         try:
-            cases = getattr(exercise_detail, "case", None) or []
+            # Support both legacy `case` and new `testCases` from agent output
+            cases = (
+                getattr(exercise_detail, "case", None)
+                or getattr(exercise_detail, "testCases", None)
+                or []
+            )
             if isinstance(cases, list) and exercise_model.id:
+                to_add = []
                 for tc in cases:
                     input_data = getattr(tc, "input", None) or getattr(
                         tc, "input_data", None
@@ -212,7 +218,8 @@ class ExerciseService:
                     explain = getattr(tc, "explain", None)
                     if input_data is None or output_data is None:
                         continue
-                    self.db.add(
+
+                    to_add.append(
                         ExerciseTestCase(
                             exercise_id=exercise_model.id,
                             input_data=str(input_data),
@@ -220,7 +227,10 @@ class ExerciseService:
                             explain=explain,
                         )
                     )
-                await self.db.commit()
+
+                if to_add:
+                    self.db.add_all(to_add)
+                    await self.db.commit()
         except Exception:
             # Don't block exercise creation if test case persistence fails
             await self.db.rollback()
@@ -320,7 +330,7 @@ class ExerciseService:
         # Đếm số bài tập đã hoàn thành bởi user này (cần có cách track completion)
         # Hiện tại chưa có bảng lưu exercise completion, sẽ ước tính từ activities
         # TODO: Implement proper exercise completion tracking
-        
+
         # Tạm thời chỉ cập nhật exercises_completed counter
         if total_exercises > 0:
             # Lấy progress hiện tại
@@ -333,7 +343,7 @@ class ExerciseService:
                 )
             )
             topic_progress = result.scalar_one_or_none()
-            
+
             if topic_progress:
                 topic_progress.exercises_completed += 1
                 await self.db.commit()
@@ -423,7 +433,7 @@ async def evaluate_submission_with_judge0(
         async with get_independent_db_session() as profile_db:
             profile_service = ProfileService(profile_db)
             score = len(results) * 10  # 10 điểm cho mỗi test case
-            
+
             await profile_service.add_user_activity(
                 user_id=user_id,
                 activity_type=ActivityType.EXERCISE,

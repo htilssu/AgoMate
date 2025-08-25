@@ -9,10 +9,10 @@ class GetExerciseSchema(BaseModel):
 
 
 class TestCase(BaseModel):
-    input_data: str = Field(
+    input: str = Field(
         ..., description="Dữ liệu đầu vào cho trường hợp thử nghiệm."
     )
-    output_data: str = Field(..., description="Kết quả đầu ra mong đợi.")
+    expectedOutput: str = Field(..., description="Kết quả đầu ra mong đợi.")
     explain: Optional[str] = Field(
         None, description="Giải thích cho trường hợp thử nghiệm."
     )
@@ -33,7 +33,7 @@ class ExerciseDetail(BaseModel):
         content (Optional[str]): Nội dung chi tiết (Markdown).
         executable (Optional[bool]): True nếu là bài tập code cần thực thi, False nếu là bài tập tự luận/suy luận.
         code_template (Optional[str]): Mẫu code khởi đầu.
-        case (List[TestCase]): Danh sách các trường hợp thử nghiệm (tối thiểu 3).
+        testCases (List[TestCase]): Danh sách các trường hợp thử nghiệm (tối thiểu 3).
     """
 
     title: str = Field(..., description="Tiêu đề của bài toán.")
@@ -51,9 +51,9 @@ class ExerciseDetail(BaseModel):
         description="True nếu là bài tập code cần thực thi, False nếu là bài tập tự luận/suy luận",
     )
     code_template: Optional[str] = Field(None, description="Mẫu code khởi đầu")
-    case: List[TestCase] = Field(
-        min_length=10,
-        description="Danh sách các trường hợp thử nghiệm, yêu cầu tối thiểu 10 trường hợp.",
+    testCases: List[TestCase] = Field(
+        min_length=3,
+        description="Danh sách các trường hợp thử nghiệm, yêu cầu tối thiểu 3 trường hợp.",
     )
 
 
