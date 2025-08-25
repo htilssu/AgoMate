@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ExerciseDetail } from "./types";
+import { MarkdownRenderer } from "@/components/ui/MarkdownRenderer";
 
 /**
  * Component hiển thị độ khó của bài tập bằng màu
@@ -43,6 +44,7 @@ export default function ExerciseHeader({
 }: {
   exercise: ExerciseDetail;
 }) {
+  console.log(exercise);
   return (
     <div className="mb-8">
       {/* Breadcrumb */}
@@ -143,10 +145,6 @@ export default function ExerciseHeader({
             </div>
           </div>
         </div>
-
-        <p className="text-foreground/70 text-lg mb-4">
-          {exercise.description}
-        </p>
 
         {exercise.completed && (
           <div className="flex items-center text-primary font-medium mb-2">

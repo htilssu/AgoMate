@@ -21,6 +21,7 @@ export interface ExerciseDetail {
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   estimatedTime: string;
   completionRate: number;
+  executable: boolean;
   completed: boolean;
   content: string;
   codeTemplate: string;

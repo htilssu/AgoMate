@@ -109,6 +109,7 @@ type BackendExercise = {
   description: string;
   category?: string | null;
   difficulty: string;
+  executable: boolean;
   estimatedTime?: string | null;
   completionRate?: number | null;
   completed?: boolean | null;
@@ -132,6 +133,7 @@ type UiExerciseDetail = {
   difficulty: "Beginner" | "Intermediate" | "Advanced";
   estimatedTime: string;
   completionRate: number;
+  executable: boolean;
   completed: boolean;
   content: string;
   codeTemplate: string;
@@ -181,6 +183,7 @@ async function getExerciseDetailForUi(
     content: exercise.content || exercise.description || "",
     codeTemplate: exercise.codeTemplate || codeTemplate,
     testCases: testCasesUi,
+    executable: exercise.executable || false,
   };
 }
 

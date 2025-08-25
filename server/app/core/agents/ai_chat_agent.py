@@ -13,7 +13,7 @@ class AIChatAgent:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or "YOUR_DEFAULT_KEY"
         # Initialize LLM with newer API
-        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-preview-05-20", temperature=0.7)
+        self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", temperature=0.7)
         # Initialize conversation memory
         self.conversation_history = ChatMessageHistory()
 
@@ -21,7 +21,14 @@ class AIChatAgent:
         """Get or create chat history for a session"""
         return self.conversation_history
 
-    def chat(self, code: str, results: List[dict], title: str, user_message: Optional[str] = None, all_tests_passed: Optional[bool] = None) -> str:
+    def chat(
+        self,
+        code: str,
+        results: List[dict],
+        title: str,
+        user_message: Optional[str] = None,
+        all_tests_passed: Optional[bool] = None,
+    ) -> str:
         """
         Xử lý hội thoại AI cho phần chat giải thuật.
         Nếu user_message có thì trả lời hội thoại, nếu không thì đánh giá code/test.
@@ -31,7 +38,9 @@ class AIChatAgent:
                 # Add context to conversation history if it's the first message
                 if not self.conversation_history.messages:
                     context_message = f"Context bài tập: {title}\nCode của học viên: {code[:200]}...\nKết quả test: {results}"
-                    self.conversation_history.add_message(SystemMessage(content=context_message))
+                    self.conversation_history.add_message(
+                        SystemMessage(content=context_message)
+                    )
 
                 system_prompt = """Bạn là một giảng viên dạy thuật toán chuyên nghiệp và thân thiện.
                 Nhiệm vụ của bạn là giao tiếp và hỗ trợ giải đáp thắc mắc của học viên.
@@ -39,15 +48,21 @@ class AIChatAgent:
                 Bạn có thể tham khảo context về bài tập và code của học viên đã được cung cấp trước đó."""
 
                 # Add user message to history
-                self.conversation_history.add_message(HumanMessage(content=user_message))
+                self.conversation_history.add_message(
+                    HumanMessage(content=user_message)
+                )
 
                 # Create messages list with system prompt and history
-                messages = [SystemMessage(content=system_prompt)] + self.conversation_history.messages
+                messages = [
+                    SystemMessage(content=system_prompt)
+                ] + self.conversation_history.messages
 
                 response = self.llm.invoke(messages)
 
                 # Add AI response to history
-                self.conversation_history.add_message(AIMessage(content=response.content))
+                self.conversation_history.add_message(
+                    AIMessage(content=response.content)
+                )
 
                 return response.content
             else:
@@ -60,15 +75,19 @@ class AIChatAgent:
 
                     messages = [
                         SystemMessage(content=system_prompt),
-                        HumanMessage(content=f"Đây là code của học viên: {code[:200]}... và đây là kết quả test: {results}. Context bài tập: {title}")
+                        HumanMessage(
+                            content=f"Đây là code của học viên: {code[:200]}... và đây là kết quả test: {results}. Context bài tập: {title}"
+                        ),
                     ]
 
                     response = self.llm.invoke(messages)
                     # Lưu phản hồi đánh giá vào lịch sử hội thoại
-                    self.conversation_history.add_message(AIMessage(content=response.content))
+                    self.conversation_history.add_message(
+                        AIMessage(content=response.content)
+                    )
                     return response.content
                 else:
-                    failed_tests = [r for r in results if not r.get('passed', False)]
+                    failed_tests = [r for r in results if not r.get("passed", False)]
                     if failed_tests:
                         system_prompt = """Bạn là một chuyên gia giải thuật chuyên nghiệp, dễ thương và thân thiện.
                         Nhiệm vụ của bạn là đưa ra gợi ý cho học viên nếu họ làm bài chưa đúng và khen họ nếu họ đã đúng.
@@ -77,12 +96,16 @@ class AIChatAgent:
 
                         messages = [
                             SystemMessage(content=system_prompt),
-                            HumanMessage(content=f"Đây là code của học viên: {code[:200]}... và đây là kết quả test: {results}. Context bài tập: {title}")
+                            HumanMessage(
+                                content=f"Đây là code của học viên: {code[:200]}... và đây là kết quả test: {results}. Context bài tập: {title}"
+                            ),
                         ]
 
                         response = self.llm.invoke(messages)
                         # Lưu phản hồi đánh giá vào lịch sử hội thoại
-                        self.conversation_history.add_message(AIMessage(content=response.content))
+                        self.conversation_history.add_message(
+                            AIMessage(content=response.content)
+                        )
                         return response.content
                     else:
                         return "💡 Code của bạn gần đúng rồi! Hãy kiểm tra lại một chút về format output hoặc xử lý edge cases."
