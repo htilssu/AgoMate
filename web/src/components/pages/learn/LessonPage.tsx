@@ -339,9 +339,24 @@ export function LessonPage({ topicId, lessonId }: LessonPageProps) {
                                 <span className="text-sm font-medium text-green-700">💡 Gợi ý:</span>
                                 <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">Thực hành</span>
                             </div>
-                            <p className="text-sm text-green-700">
+                            <p className="text-sm text-green-700 mb-4">
                                 Hãy thử thực hiện bài tập này để củng cố kiến thức vừa học. Bạn có thể sử dụng môi trường lập trình yêu thích của mình.
                             </p>
+
+                            {/* Hiển thị nút làm bài tập nếu có exerciseId */}
+                            {section.exerciseId && (
+                                <div className="flex justify-center pt-3 border-t border-green-200">
+                                    <button
+                                        onClick={() => router.push(`/exercises/${section.exerciseId}`)}
+                                        className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 hover:shadow-lg transition-all duration-200"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h1m4 0h1m6-6V7a2 2 0 00-2-2H5a2 2 0 00-2 2v3m2 0h14m-2 0v9a2 2 0 01-2 2H5a2 2 0 01-2 2v-9m0 0V7" />
+                                        </svg>
+                                        Làm bài tập
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );

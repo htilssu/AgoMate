@@ -5,10 +5,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.database import Base
 from app.schemas.exercise_schema import ExerciseDetail
+from app.models.exercise_test_case_model import ExerciseTestCase
 
 if TYPE_CHECKING:
     from app.models.lesson_model import LessonSection
-    from app.models.exercise_test_case_model import ExerciseTestCase
 
 
 class Exercise(Base):
@@ -59,15 +59,14 @@ class Exercise(Base):
 
         # Convert testCases to case field for backward compatibility
         if hasattr(data, "testCases") and data.testCases:
-            # Convert the new format to the old format for backward compatibility
-            case_data = []
-            for test_case in data.testCases:
-                case_data.append({
-                    "input_data": test_case.input,
-                    "output_data": test_case.expectedOutput,
-                    "explain": getattr(test_case, "explain", None)
-                })
-            exercise.case = case_data
+            exercise.test_cases = [
+                ExerciseTestCase(
+                    input_data=test_case.input,
+                    output_data=test_case.expectedOutput,
+                    explain=getattr(test_case, "explain", None),
+                )
+                for test_case in data.testCases
+            ]
 
         return exercise
 
@@ -89,19 +88,28 @@ class Exercise(Base):
             "completed": self.completed,
             "content": self.content,
             "code_template": self.code_template,
-            "lesson_id": self.lesson_id,
         }
 
-        # Convert case field to testCases format for frontend
-        if self.case and isinstance(self.case, list):
+        if self.test_cases and isinstance(self.test_cases, list):
             test_cases = []
-            for tc in self.case:
+            for tc in self.test_cases:
                 if isinstance(tc, dict):
-                    test_cases.append({
-                        "input": tc.get("input_data", ""),
-                        "expectedOutput": tc.get("output_data", ""),
-                        "explain": tc.get("explain")
-                    })
+                    test_cases.append(
+                        {
+                            "input": tc.get("input_data", ""),
+                            "expectedOutput": tc.get("output_data", ""),
+                            "explain": tc.get("explain"),
+                        }
+                    )
+                else:
+                    # ORM object (ExerciseTestCase)
+                    test_cases.append(
+                        {
+                            "input": getattr(tc, "input_data", ""),
+                            "expectedOutput": getattr(tc, "output_data", ""),
+                            "explain": getattr(tc, "explain", None),
+                        }
+                    )
             result["testCases"] = test_cases
         else:
             result["testCases"] = []

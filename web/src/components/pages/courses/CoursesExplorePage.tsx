@@ -54,12 +54,8 @@ export function CoursesExplorePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours > 0 ? `${hours} giờ ` : ""}${
-      mins > 0 ? `${mins} phút` : ""
-    }`;
+  const formatDuration = (hours: number) => {
+    return `${hours > 0 ? `${hours} giờ ` : ""}`;
   };
 
   const handleCourseClick = (courseId: number) => {

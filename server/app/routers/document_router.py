@@ -55,7 +55,7 @@ async def store_document(
 
             job_id = await call_external_document_processing_api(
                 DocumentRequestExternal(
-                    document_url, "https://three-glasses-brush.loca.lt/document/webhook"
+                    document_url, "https://lovely-years-grow.loca.lt/document/webhook"
                 )
             )
 
@@ -127,7 +127,7 @@ async def get_document_status(
     ids: str, document_service: DocumentService = Depends(get_document_service)
 ):
     document_ids = ids.split(",")
-    statuses = document_service.get_document_status(document_ids)
+    statuses = await document_service.get_document_status(document_ids)
     return statuses
 
 

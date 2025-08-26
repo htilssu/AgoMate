@@ -25,7 +25,7 @@ export function DocumentUpload() {
   useEffect(() => {
     const pollStatus = async () => {
       const processingDocs = documents.filter(
-        (doc) => doc.status === "processing"
+        (doc) => doc.status.toLowerCase() === "in_queue"
       );
       if (processingDocs.length > 0) {
         try {

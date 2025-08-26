@@ -14,6 +14,7 @@ export interface LessonSection {
   explanation: string;
   type: string;
   order: number;
+  exerciseId?: number; // ID của bài tập liên kết (nếu có)
 }
 
 export interface LessonCompleteResponseSchema {

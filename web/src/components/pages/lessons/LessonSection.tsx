@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircleIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, PlayIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
 import CodeSection from './CodeSection';
 
 interface LessonSectionData {
-    type: 'text' | 'code' | 'quiz' | string;
+    id?: number;
+    type: 'text' | 'code' | 'quiz' | 'exercise' | string;
     content: string;
     options?: Record<string, string>;
     answer?: string;
     explanation?: string;
     language?: string;
+    exerciseId?: number; // ID của bài tập liên kết (nếu có)
 }
 
 interface LessonSectionProps {
@@ -32,6 +35,7 @@ export const LessonSection: React.FC<LessonSectionProps> = ({
     const [selectedAnswer, setSelectedAnswer] = useState<string>('');
     const [showAnswer, setShowAnswer] = useState<boolean>(false);
     const [isAnswered, setIsAnswered] = useState<boolean>(false);
+    const router = useRouter();
 
     const handleAnswerSelect = (answer: string) => {
         setSelectedAnswer(answer);
@@ -41,6 +45,12 @@ export const LessonSection: React.FC<LessonSectionProps> = ({
         if (selectedAnswer) {
             setShowAnswer(true);
             setIsAnswered(true);
+        }
+    };
+
+    const handleGoToExercise = () => {
+        if (section.exerciseId) {
+            router.push(`/exercises/${section.exerciseId}`);
         }
     };
 
@@ -160,14 +170,72 @@ export const LessonSection: React.FC<LessonSectionProps> = ({
         </div>
     );
 
-    const renderDefaultSection = () => (
-        <div className="prose max-w-none dark:prose-invert">
-            <div
-                dangerouslySetInnerHTML={{ __html: section.content }}
-                className="text-foreground"
-            />
+    const renderExerciseSection = () => (
+        <div>
+            <h3 className="text-lg font-semibold mb-3 text-foreground flex items-center gap-2">
+                <span className="text-2xl">🏋️</span>
+                Bài tập thực hành
+            </h3>
+
+            <div className="prose max-w-none mb-4 dark:prose-invert">
+                <div
+                    dangerouslySetInnerHTML={{ __html: section.content }}
+                    className="text-foreground"
+                />
+            </div>
+
+            {section.exerciseId && (
+                <div className="mt-4">
+                    <button
+                        onClick={handleGoToExercise}
+                        className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                    >
+                        <PlayIcon className="h-5 w-5" />
+                        Làm bài tập
+                    </button>
+                </div>
+            )}
         </div>
     );
+
+    const renderDefaultSection = () => {
+        // Kiểm tra nếu section có exerciseId thì hiển thị nút làm bài
+        const hasExercise = section.exerciseId && section.exerciseId > 0;
+
+        return (
+            <div>
+                <div className="prose max-w-none dark:prose-invert">
+                    <div
+                        dangerouslySetInnerHTML={{ __html: section.content }}
+                        className="text-foreground"
+                    />
+                </div>
+
+                {hasExercise && (
+                    <div className="mt-6 pt-4 border-t border-border">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h4 className="text-md font-semibold text-foreground flex items-center gap-2">
+                                    <span className="text-xl">🏋️</span>
+                                    Bài tập luyện tập
+                                </h4>
+                                <p className="text-sm text-foreground/60 mt-1">
+                                    Áp dụng kiến thức vừa học vào thực tế
+                                </p>
+                            </div>
+                            <button
+                                onClick={handleGoToExercise}
+                                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                            >
+                                <PlayIcon className="h-4 w-4" />
+                                Làm bài
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
 
     const renderSectionContent = () => {
         switch (section.type) {
@@ -177,6 +245,8 @@ export const LessonSection: React.FC<LessonSectionProps> = ({
                 return renderCodeSection();
             case 'quiz':
                 return renderQuizSection();
+            case 'exercise':
+                return renderExerciseSection();
             default:
                 return renderDefaultSection();
         }

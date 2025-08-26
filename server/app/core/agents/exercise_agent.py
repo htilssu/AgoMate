@@ -1,5 +1,7 @@
 from typing import override
 
+from tenacity import retry, stop_after_attempt, wait_fixed
+
 from app.core.agents.base_agent import BaseAgent
 from app.core.agents.components.document_store import get_vector_store
 from app.core.agents.components.llm_model import create_new_llm_model
@@ -68,25 +70,28 @@ Hãy đảm bảo bài tập:
 # Quan trọng về testCases:
 - testCases phải là một mảng chứa ít nhất 3 test case
 - Mỗi test case phải có format: {{"input": "dữ liệu đầu vào", "expectedOutput": "kết quả mong đợi"}}
-- Input và expectedOutput phải là string
+- Input (là chuỗi JSON string hợp lệ) và expectedOutput phải là string
 - Input nên bao gồm các tham số cần thiết (ví dụ: "[1,2,3], 2" cho hàm nhận mảng và số)
+- Input phải được định dạng chính xác, nếu có nhiều tham số thì đặt tất cả trong một mảng JSON hợp lệ
 - ExpectedOutput phải chính xác và dễ hiểu
 
 # Quy ước CHẶT CHẼ cho input:
-# - Luôn gói TOÀN BỘ input trong MỘT mảng, dạng chuỗi JSON HỢP LỆ: ví dụ
-#   + "[1,2,3]" thay vì "1,2,3"
-#   + "[[1,2,3,4],5]" thay vì "[1,2,3,4], 5"
-# - Nhớ dấu phẩy giữa các phần tử trong mảng (JSON bắt buộc phải có dấu phẩy)
-# - Nếu hàm nhận nhiều tham số (a, b, c), hãy đặt TẤT CẢ vào một mảng duy nhất
-#   và mỗi phần tử PHẢI cách nhau bằng dấu phẩy: ví dụ "[a, b, c]"
-# - Nếu hàm chỉ nhận một tham số, vẫn để trong mảng: ví dụ "[42]"
+     - Luôn gói TOÀN BỘ input trong MỘT mảng, dạng chuỗi JSON HỢP LỆ: ví dụ
+       + "[1,2,3]" thay vì "1,2,3"
+       + "[[1,2,3,4],5]" thay vì "[1,2,3,4], 5"
+       + "[1,3, \"Dung\"]"
+    - Nhớ dấu phẩy giữa các phần tử trong mảng (JSON bắt buộc phải có dấu phẩy)
+    - Không xuống dòng ở trong mảng mà ngăn cách bởi dấu ","
+    - Nếu hàm nhận nhiều tham số (a, b, c), hãy đặt TẤT CẢ vào một mảng duy nhất
+       và mỗi phần tử PHẢI cách nhau bằng dấu phẩy: ví dụ "[a, b, c]"
+    - Nếu hàm chỉ nhận một tham số, vẫn để trong mảng: ví dụ "[42]"
 
 # Suy nghĩ kỹ:
 - Khi người dùng học bài này thì họ đã có những kiến thức gì trước đó, nếu mới nhập môn thì cần tránh những ngữ cảnh quá phức tạp
 - Xác định xem bài học tập trung vào lý thuyết hay thực hành để chọn loại bài tập phù hợp
 - Với các bài học về khái niệm cơ bản, có thể tạo bài tập lý thuyết (executable=false)
 - Với các bài học về thuật toán cụ thể, nên tạo bài tập lập trình (executable=true)
-
+- Phần nội dung của bài tập sẽ có 1 số ví dụ về input và output để sinh viên có thể hình dung ra bài toán (format markdown)
 Hãy trả về kết quả theo đúng format JSON được yêu cầu.
 
 {parse_instruction}
@@ -268,6 +273,7 @@ class GenerateExerciseQuestionAgent(BaseAgent):
 
     @override
     @trace_agent(project_name="default", tags=["exercise", "generator"])
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
     async def act(self, *args, **kwargs):
         """
         Tạo bài tập giải thuật và lưu vào cơ sở dữ liệu.
@@ -297,7 +303,11 @@ class GenerateExerciseQuestionAgent(BaseAgent):
             metadata={
                 "session_id": session_id,
                 "topic": topic,
-                "lesson_title": (lesson_ctx or {}).get("name") if isinstance(lesson_ctx, dict) else None,
+                "lesson_title": (
+                    (lesson_ctx or {}).get("name")
+                    if isinstance(lesson_ctx, dict)
+                    else None
+                ),
                 "difficulty": difficulty,
                 "agent_type": "exercise_generator",
             },
@@ -320,7 +330,9 @@ class GenerateExerciseQuestionAgent(BaseAgent):
             if lesson_ctx and isinstance(lesson_ctx, dict):
                 lesson_title = lesson_ctx.get("name") or lesson_ctx.get("title") or ""
                 lesson_desc = lesson_ctx.get("description") or ""
-                query = f"lesson: {lesson_title} - {lesson_desc}, difficulty: {difficulty}"
+                query = (
+                    f"lesson: {lesson_title} - {lesson_desc}, difficulty: {difficulty}"
+                )
             else:
                 query = f"topic: {topic}, difficulty: {difficulty}"
 
@@ -341,15 +353,25 @@ class GenerateExerciseQuestionAgent(BaseAgent):
                 )
 
                 # Validate and ensure testCases format is correct
-                if hasattr(exercise_detail, 'testCases') and exercise_detail.testCases:
+                if hasattr(exercise_detail, "testCases") and exercise_detail.testCases:
                     for test_case in exercise_detail.testCases:
-                        if not hasattr(test_case, 'input') or not hasattr(test_case, 'expectedOutput'):
-                            raise ValueError("Test case format không đúng. Cần có 'input' và 'expectedOutput' fields.")
-                        if not isinstance(test_case.input, str) or not isinstance(test_case.expectedOutput, str):
-                            raise ValueError("Test case input và expectedOutput phải là string.")
+                        if not hasattr(test_case, "input") or not hasattr(
+                            test_case, "expectedOutput"
+                        ):
+                            raise ValueError(
+                                "Test case format không đúng. Cần có 'input' và 'expectedOutput' fields."
+                            )
+                        if not isinstance(test_case.input, str) or not isinstance(
+                            test_case.expectedOutput, str
+                        ):
+                            raise ValueError(
+                                "Test case input và expectedOutput phải là string."
+                            )
 
                         # Normalize input to always be a single JSON-like array string with commas
-                        test_case.input = self._normalize_input_array_string(test_case.input)
+                        test_case.input = self._normalize_input_array_string(
+                            test_case.input
+                        )
 
                 return exercise_detail
             else:

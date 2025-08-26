@@ -16,6 +16,7 @@ from app.schemas.exercise_schema import (
     CodeSubmissionRequest,
     CodeSubmissionResponse,
     CreateExerciseSchema,
+    ExerciseDetail,
     TestCaseResult,
 )
 from app.schemas.exercise_schema import ExerciseUpdate
@@ -181,7 +182,7 @@ class ExerciseService:
             raise ValueError(f"Không tìm thấy chủ đề với ID {create_data.topic_id}")
 
         # Gọi agent để tạo bài tập và lưu vào database
-        exercise_detail = await self.exercise_agent.act(
+        exercise_detail: ExerciseDetail = await self.exercise_agent.act(
             session_id=create_data.session_id,
             topic=topic.name,
             difficulty=create_data.difficulty,
@@ -190,7 +191,12 @@ class ExerciseService:
 
         exercise_model = ExerciseModel.exercise_from_schema(exercise_detail)
         exercise_model.test_cases = [
-            ExerciseTestCase(**testc) for testc in exercise_detail.case
+            ExerciseTestCase(
+                input_data=testc.input,
+                output_data=testc.expectedOutput,
+                explain=testc.explain,
+            )
+            for testc in exercise_detail.testCases
         ]
         self.db.add(exercise_model)
         await self.db.commit()
@@ -290,11 +296,15 @@ class ExerciseService:
 
         # Track exercise completion activity if all tests passed
         if all_passed:
-            await self._track_exercise_completion(user_id, exercise_id, exercise, len(results))
+            await self._track_exercise_completion(
+                user_id, exercise_id, exercise, len(results)
+            )
 
         return CodeSubmissionResponse(results=results, all_passed=all_passed)
 
-    async def _track_exercise_completion(self, user_id: int, exercise_id: int, exercise, test_count: int) -> None:
+    async def _track_exercise_completion(
+        self, user_id: int, exercise_id: int, exercise, test_count: int
+    ) -> None:
         """
         Theo dõi hoạt động hoàn thành bài tập
         """
@@ -309,21 +319,24 @@ class ExerciseService:
             description=f"Đã giải thành công bài tập '{exercise.title}' với tất cả {test_count} test case",
             score=score,
             progress="100%",
-            related_id=exercise_id
+            related_id=exercise_id,
         )
 
         # Cập nhật tiến độ topic nếu có topic_id
-        if hasattr(exercise, 'topic_id') and exercise.topic_id:
+        if hasattr(exercise, "topic_id") and exercise.topic_id:
             await self._update_topic_progress_after_exercise(user_id, exercise.topic_id)
 
-    async def _update_topic_progress_after_exercise(self, user_id: int, topic_id: int) -> None:
+    async def _update_topic_progress_after_exercise(
+        self, user_id: int, topic_id: int
+    ) -> None:
         """
         Cập nhật tiến độ chủ đề sau khi hoàn thành bài tập
         """
         # Đếm tổng số bài tập trong chủ đề
         total_exercises_result = await self.db.execute(
-            select(func.count(ExerciseModel.id))
-            .where(ExerciseModel.topic_id == topic_id)
+            select(func.count(ExerciseModel.id)).where(
+                ExerciseModel.topic_id == topic_id
+            )
         )
         total_exercises = total_exercises_result.scalar() or 0
 
@@ -335,11 +348,11 @@ class ExerciseService:
         if total_exercises > 0:
             # Lấy progress hiện tại
             from app.models.user_topic_progress_model import UserTopicProgress
+
             result = await self.db.execute(
-                select(UserTopicProgress)
-                .where(
+                select(UserTopicProgress).where(
                     UserTopicProgress.user_id == user_id,
-                    UserTopicProgress.topic_id == topic_id
+                    UserTopicProgress.topic_id == topic_id,
                 )
             )
             topic_progress = result.scalar_one_or_none()
@@ -441,7 +454,7 @@ async def evaluate_submission_with_judge0(
                 description=f"Đã giải thành công bài tập '{exercise.title}' với tất cả {len(results)} test case (Judge0)",
                 score=score,
                 progress="100%",
-                related_id=exercise_id
+                related_id=exercise_id,
             )
 
     return CodeSubmissionResponse(results=results, all_passed=all_passed)

@@ -16,7 +16,7 @@ const DifficultyBadge = ({ difficulty }: { difficulty: string }) => {
 
   if (difficulty === "Beginner") {
     colorClass =
-      "bg-green-200 text-green-900 dark:bg-green-900/30 dark:text-green-300";
+      "bg-green-200 text-green-900";
   } else if (difficulty === "Intermediate") {
     colorClass =
       "bg-yellow-200 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300";
@@ -78,7 +78,7 @@ export default function ExerciseHeader({
         {/* Metadata cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-foreground/5 rounded-lg p-4 border border-foreground/10">
-            <div className="text-sm text-foreground/60 mb-1">Độ khó</div>
+            <div className="text-sm text-foreground mb-1">Độ khó</div>
             <div className="flex items-center">
               <DifficultyBadge difficulty={exercise.difficulty} />
             </div>
@@ -100,27 +100,6 @@ export default function ExerciseHeader({
                 />
               </svg>
               {exercise.category}
-            </div>
-          </div>
-
-          <div className="bg-foreground/5 rounded-lg p-4 border border-foreground/10">
-            <div className="text-sm text-foreground/60 mb-1">
-              Thời gian dự kiến
-            </div>
-            <div className="flex items-center text-foreground font-medium">
-              <svg
-                className="h-4 w-4 mr-2 text-foreground/60"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {exercise.estimatedTime}
             </div>
           </div>
 

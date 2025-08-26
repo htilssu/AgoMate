@@ -10,7 +10,7 @@ class GetExerciseSchema(BaseModel):
 
 class TestCase(BaseModel):
     input: str = Field(
-        ..., description="Dữ liệu đầu vào cho trường hợp thử nghiệm."
+        ..., description="Dữ liệu đầu vào cho trường hợp thử nghiệm. là mảng json"
     )
     expectedOutput: str = Field(..., description="Kết quả đầu ra mong đợi.")
     explain: Optional[str] = Field(

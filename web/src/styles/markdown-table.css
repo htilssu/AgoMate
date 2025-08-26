@@ -1,146 +1,79 @@
-/* Enhanced Markdown Table Styles */
-
+/* Force White Background + Black Text for Markdown Tables */
 .markdown-table-wrapper {
     position: relative;
     overflow: hidden;
     border-radius: 0.5rem;
-    border-color: #e1e1e1;
-    background-color: #1f2937;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    border: 1px solid #000000 !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
 }
 
 .markdown-table {
     width: 100%;
-    border-collapse: collapse;
+    border-collapse: collapse !important;
+    background-color: #ffffff !important;
+    color: #000000 !important;
 }
 
 .markdown-table thead {
-    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    background-color: #ffffff !important;
 }
 
 .markdown-table th {
     position: sticky;
     top: 0;
     z-index: 10;
-    border-bottom: 2px solid #cbd5e1;
-    background: linear-gradient(to right, #f8fafc, #f1f5f9);
+    border: 1px solid #000000 !important;
+    background-color: #ffffff !important;
     padding: 0.75rem 1rem;
     text-align: left;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #475569;
+    color: #000000 !important;
 }
 
 .markdown-table tbody tr {
-    border-bottom: 1px solid #f1f5f9;
-    transition: colors 0.2s;
+    border-bottom: 1px solid #000000 !important;
+    background-color: #ffffff !important;
+    transition: none !important;
 }
 
 .markdown-table tbody tr:hover {
-    background-color: #dbeafe;
-}
-
-.markdown-table tbody tr:last-child {
-    border-bottom: 0;
+    background-color: #ffffff !important;
 }
 
 .markdown-table td {
-    border-bottom: 1px solid #f1f5f9;
+    border: 1px solid #000000 !important;
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
-    color: #111827;
+    color: #000000 !important;
 }
 
-/* Responsive table on mobile */
+/* Responsive table */
 @media (max-width: 640px) {
     .markdown-table-wrapper {
-        overflow-x: auto;
-    }
-
-    .markdown-table {
-        min-width: 100%;
+        overflow-x: auto !important;
     }
 
     .markdown-table th,
     .markdown-table td {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.75rem !important;
     }
 }
 
-/* Table cell alignment classes */
-.table-cell-left {
-    text-align: left;
-}
-
-.table-cell-center {
-    text-align: center;
-}
-
-.table-cell-right {
-    text-align: right;
-}
-
-/* Striped table variant */
-.markdown-table.table-striped tbody tr:nth-child(even) {
-    background-color: rgba(248, 250, 252, 0.5);
-}
-
-.markdown-table.table-striped tbody tr:nth-child(even):hover {
-    background-color: #dbeafe;
-}
-
-/* Table with borders */
-.markdown-table.table-bordered th,
-.markdown-table.table-bordered td {
-    border: 1px solid #cbd5e1;
-}
-
-/* Compact table variant */
-.markdown-table.table-compact th,
-.markdown-table.table-compact td {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-}
-
-/* Dark mode support */
+/* Remove dark mode overrides completely */
 @media (prefers-color-scheme: dark) {
-    .markdown-table-wrapper {
-        border-color: #374151;
-        background-color: #1f2937;
-    }
 
-    .markdown-table thead {
-        background: linear-gradient(to right, #374151, #4b5563);
-    }
-
-    .markdown-table th {
-        border-bottom-color: #6b7280;
-        background: linear-gradient(to right, #374151, #4b5563);
-        color: #d1d5db;
-    }
-
+    .markdown-table-wrapper,
+    .markdown-table,
+    .markdown-table th,
+    .markdown-table td,
     .markdown-table tbody tr {
-        border-bottom-color: #374151;
-    }
-
-    .markdown-table tbody tr:hover {
-        background-color: #1e3a8a;
-    }
-
-    .markdown-table td {
-        border-bottom-color: #374151;
-        color: #f9fafb;
-    }
-
-    .markdown-table.table-striped tbody tr:nth-child(even) {
-        background-color: rgba(55, 65, 81, 0.5);
-    }
-
-    .markdown-table.table-striped tbody tr:nth-child(even):hover {
-        background-color: #1e3a8a;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border-color: #000000 !important;
     }
 }

@@ -11,6 +11,7 @@ from app.models import Topic, Lesson
 from app.models.lesson_model import LessonSection
 from app.services.base_generate_service import BaseGenerateService
 from app.utils.model_utils import pydantic_to_sqlalchemy_scalar
+from app.schemas.exercise_schema import ExerciseDetail
 
 
 class LessonGenerateService(BaseGenerateService[List[Lesson]]):
@@ -70,103 +71,97 @@ class LessonGenerateService(BaseGenerateService[List[Lesson]]):
                         json.dumps(requirement_data)
                     )
 
-                except Exception as e:
-                    print(
-                        f"Lỗi khi tạo exercise cho section {exercise_section.id}: {str(e)}"
-                    )
+                except Exception:
+                    import traceback
+
+                    traceback.print_exc()
 
     async def _call_create_exercise_function(self, user_requirement: str):
         """Gọi function tạo exercise trực tiếp"""
-        try:
-            from app.core.agents.exercise_agent import get_exercise_agent
-            from app.database.database import get_independent_db_session
-            import json
+        from app.core.agents.exercise_agent import get_exercise_agent
+        from app.database.database import get_independent_db_session
+        import json
 
-            # Parse user_requirement để lấy thông tin cần thiết
-            requirement_data = json.loads(user_requirement)
+        # Parse user_requirement để lấy thông tin cần thiết
+        requirement_data = json.loads(user_requirement)
 
-            lesson_id = requirement_data.get("lesson_id")
-            topic_id = requirement_data.get("topic_id")
-            section_id = requirement_data.get("section_id")  # ID của section exercise
-            difficulty = requirement_data.get("difficulty", "Beginner")
-            session_id = requirement_data.get("session_id", "")
-            lesson_content = requirement_data.get("lesson_content", "")
+        lesson_id = requirement_data.get("lesson_id")
+        topic_id = requirement_data.get("topic_id")
+        section_id = requirement_data.get("section_id")  # ID của section exercise
+        difficulty = requirement_data.get("difficulty", "Beginner")
+        session_id = requirement_data.get("session_id", "")
+        lesson_content = requirement_data.get("lesson_content", "")
 
-            if not all([lesson_id, topic_id, section_id, session_id]):
-                print("Thiếu thông tin cần thiết để tạo bài tập")
-                return
+        if not all([lesson_id, topic_id, section_id, session_id]):
+            print("Thiếu thông tin cần thiết để tạo bài tập")
+            return
 
-            # Sử dụng independent db session cho background task
-            async with get_independent_db_session() as db:
-                exercise_agent = get_exercise_agent()
+        # Sử dụng independent db session cho background task
+        async with get_independent_db_session() as db:
+            exercise_agent = get_exercise_agent()
 
-                # Tạo enhanced user requirement cho exercise agent
-                enhanced_requirement = f"""
-                Tạo bài tập luyện tập cho lesson section với nội dung:
-                {lesson_content}
-                                
-                Bài tập cần:
-                - Phù hợp với nội dung lesson vừa học
-                - Giúp học viên luyện tập và củng cố kiến thức
-                - Độ khó: {difficulty}
-                - Xác định loại bài tập phù hợp:
-                  + Nếu lesson tập trung vào lý thuyết, khái niệm → executable=false (bài tập giải thích, phân tích)
-                  + Nếu lesson có thuật toán, code example → executable=true (bài tập viết code)
-                  + Nếu lesson về cấu trúc dữ liệu cơ bản → executable=true (bài tập implement)
-                  + Nếu lesson về giới thiệu khái niệm → executable=false (bài tập lý thuyết)
-                """
+            # Tạo enhanced user requirement cho exercise agent
+            enhanced_requirement = f"""
+            Tạo bài tập luyện tập cho lesson section với nội dung:
+            {lesson_content}
+                            
+            Bài tập cần:
+            - Phù hợp với nội dung lesson vừa học
+            - Giúp học viên luyện tập và củng cố kiến thức
+            - Độ khó: {difficulty}
+            - Xác định loại bài tập phù hợp:
+                + Nếu lesson tập trung vào lý thuyết, khái niệm → executable=false (bài tập giải thích, phân tích)
+                + Nếu lesson có thuật toán, code example → executable=true (bài tập viết code)
+                + Nếu lesson về cấu trúc dữ liệu cơ bản → executable=true (bài tập implement)
+                + Nếu lesson về giới thiệu khái niệm → executable=false (bài tập lý thuyết)
+            """
 
-                lesson_info = {
-                    "content": lesson_content,
-                    "requirement": enhanced_requirement,
-                }
+            lesson_info = {
+                "content": lesson_content,
+                "requirement": enhanced_requirement,
+            }
 
-                exercise_detail = await exercise_agent.act(
-                    session_id=session_id,
-                    topic=f"lesson_practice_{topic_id}",
-                    difficulty=difficulty,
-                    lesson=lesson_info,
+            exercise_detail: ExerciseDetail = await exercise_agent.act(
+                session_id=session_id,
+                topic=f"lesson_practice_{topic_id}",
+                difficulty=difficulty,
+                lesson=lesson_info,
+            )
+
+            # Lưu exercise vào database
+            from app.models.exercise_model import (
+                Exercise as ExerciseModel,
+            )
+            from app.models.exercise_test_case_model import (
+                ExerciseTestCase,
+            )
+
+            exercise_model = ExerciseModel.exercise_from_schema(exercise_detail)
+            db.add(exercise_model)
+            await db.commit()
+            await db.refresh(exercise_model)
+
+            for testc in exercise_detail.testCases:
+                test_case = ExerciseTestCase(
+                    exercise_id=exercise_model.id,
+                    input_data=testc.input,
+                    output_data=testc.expectedOutput,
+                    explain=testc.explain,
                 )
+                db.add(test_case)
 
-                # Lưu exercise vào database
-                from app.models.exercise_model import (
-                    Exercise as ExerciseModel,
-                )
-                from app.models.exercise_test_case_model import (
-                    ExerciseTestCase,
-                )
+            await db.commit()
 
-                exercise_model = ExerciseModel.exercise_from_schema(exercise_detail)
-                db.add(exercise_model)
+            # Gán exercise_id cho lesson section
+            from app.models.lesson_model import LessonSection
+
+            section = await db.get(LessonSection, section_id)
+            if section:
+                section.exercise_id = exercise_model.id
                 await db.commit()
-                await db.refresh(exercise_model)
+                print(f"Đã gán exercise {exercise_model.id} cho section {section_id}")
 
-                for testc in exercise_detail.case:
-                    test_case = ExerciseTestCase(
-                        exercise_id=exercise_model.id,
-                        input_data=testc.input_data,
-                        output_data=testc.output_data,
-                        explain=testc.explain,
-                    )
-                    db.add(test_case)
-
-                await db.commit()
-
-                # Gán exercise_id cho lesson section
-                from app.models.lesson_model import LessonSection
-
-                section = await db.get(LessonSection, section_id)
-                if section:
-                    section.exercise_id = exercise_model.id
-                    await db.commit()
-                    print(
-                        f"Đã gán exercise {exercise_model.id} cho section {section_id}"
-                    )
-
-                print(f"Đã tạo thành công bài tập luyện tập: {exercise_model.title}")
-
-        except Exception as create_error:
-            print(f"Lỗi khi tạo bài tập: {str(create_error)}")
+            print(f"Đã tạo thành công bài tập luyện tập: {exercise_model.title}")
 
     async def generate_all_by_topic(self, topic_list: List[Topic]):
         async def process_topic(topic):

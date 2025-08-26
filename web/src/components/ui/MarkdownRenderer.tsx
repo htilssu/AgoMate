@@ -126,8 +126,8 @@ export function MarkdownRenderer({
               textAlign === "center"
                 ? "table-cell-center"
                 : textAlign === "right"
-                ? "table-cell-right"
-                : "table-cell-left";
+                  ? "table-cell-right"
+                  : "table-cell-left";
 
             return (
               <th className={alignmentClass} style={style} {...props}>
@@ -142,8 +142,8 @@ export function MarkdownRenderer({
               textAlign === "center"
                 ? "table-cell-center"
                 : textAlign === "right"
-                ? "table-cell-right"
-                : "table-cell-left";
+                  ? "table-cell-right"
+                  : "table-cell-left";
 
             return (
               <td className={alignmentClass} style={style} {...props}>
